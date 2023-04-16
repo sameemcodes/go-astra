@@ -2,8 +2,8 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"os"
+	"fmt"
 
 	"github.com/stargate/stargate-grpc-go-client/stargate/pkg/auth"
 	"github.com/stargate/stargate-grpc-go-client/stargate/pkg/client"
@@ -15,7 +15,7 @@ import (
 var stargateClient *client.StargateClient
 
 func main() {
-
+    //Authenticated Connection
 	/*grpcEndpoint := "localhost:8090"
 	authEndpoint := "localhost:8081"
 	username := "cassandra"
