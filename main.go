@@ -1,20 +1,22 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
-	"google.golang.org/grpc"
+
 	"github.com/stargate/stargate-grpc-go-client/stargate/pkg/auth"
 	"github.com/stargate/stargate-grpc-go-client/stargate/pkg/client"
 	pb "github.com/stargate/stargate-grpc-go-client/stargate/pkg/proto"
-
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var stargateClient *client.StargateClient
 
 func main() {
 
-	grpcEndpoint := "localhost:8090"
+	/*grpcEndpoint := "localhost:8090"
 	authEndpoint := "localhost:8081"
 	username := "cassandra"
 	passwd := "cassandra"
@@ -26,37 +28,25 @@ func main() {
 			),
 		),
 	)
-
+	*/
 	// Astra DB configuration
- astra_uri := "cc5a4e6f-a071-42e0-a256-36c48c91d8d8-asia-south1.db.astra.datastax.com";
- bearer_token := "AstraCS:UgvebHqdmlBBKIgnlGPWoZLp";
+	const astra_uri = "$ASTRA_CLUSTER_ID-$ASTRA_REGION.apps.astra.datastax.com:443"
+	const bearer_token = "AstraCS:xxxxx"
 
-// Create connection with authentication
-// For Astra DB:
-config := &tls.Config{
-  InsecureSkipVerify: false,
-}
+	config := &tls.Config{
+		InsecureSkipVerify: false,
+	}
 
-conn2, err2 := grpc.Dial(astra_uri, grpc.WithTransportCredentials(credentials.NewTLS(config)),
-  grpc.WithBlock(),
-  grpc.WithPerRPCCredentials(
-  auth.NewStaticTokenProvider(bearer_token),
-  ),
-)
+	fmt.Printf("before grpc conn\n")
 
-	fmt.Printf("made conn\n")
+	conn, err := grpc.Dial(astra_uri, grpc.WithTransportCredentials(credentials.NewTLS(config)),
+		grpc.WithBlock(),
+		grpc.WithPerRPCCredentials(
+			auth.NewStaticTokenProvider(bearer_token),
+		),
+	)
 
-	// config := &tls.Config{
-	// 	InsecureSkipVerify: false,
-	// }
-	//conn, err := grpc.Dial(grpcEndpoint, grpc.WithTransportCredentials(credentials.NewTLS(config)),
-	//   grpc.WithBlock(),
-	//   grpc.WithPerRPCCredentials(
-	//     auth.NewTableBasedTokenProvider(
-	//       fmt.Sprintf("http://%s/v1/auth", authEndpoint), username, passwd,
-	//     ),
-	//   ),
-	// )
+	fmt.Print("Post connection : ", err, "\n")
 
 	stargateClient, err = client.NewStargateClientWithConn(conn)
 
@@ -64,53 +54,9 @@ conn2, err2 := grpc.Dial(astra_uri, grpc.WithTransportCredentials(credentials.Ne
 		fmt.Printf("error creating client %v", err)
 		os.Exit(1)
 	}
-	fmt.Printf("made client\n")
-
-	// Create a new keyspace
-	createKeyspaceQuery := &pb.Query{
-		Cql: "CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1};",
-	}
-
-	_, err = stargateClient.ExecuteQuery(createKeyspaceQuery)
-	if err != nil {
-		fmt.Printf("error creating keyspace %v", err)
-		return
-	}
-	fmt.Printf("made keyspace\n")
-
-	// Create a new table
-	createTableQuery := &pb.Query{
-		Cql: "CREATE TABLE IF NOT EXISTS test.users (firstname text PRIMARY KEY, lastname text);",
-	}
-
-	_, err = stargateClient.ExecuteQuery(createTableQuery)
-	if err != nil {
-		fmt.Printf("error creating table %v", err)
-		return
-	}
-	fmt.Printf("made table \n")
-
-	batch := &pb.Batch{
-		Type: pb.Batch_LOGGED,
-		Queries: []*pb.BatchQuery{
-			{
-				Cql: "INSERT INTO test.users (firstname, lastname) VALUES ('Jane', 'Doe');",
-			},
-			{
-				Cql: "INSERT INTO test.users (firstname, lastname) VALUES ('Serge', 'Provencio');",
-			},
-		},
-	}
-
-	_, err = stargateClient.ExecuteBatch(batch)
-	if err != nil {
-		fmt.Printf("error creating batch %v", err)
-		return
-	}
-	fmt.Printf("insert data\n")
 
 	selectQuery := &pb.Query{
-		Cql: "SELECT firstname, lastname FROM test.users;",
+		Cql: "SELECT * FROM user_details.user;",
 	}
 
 	response, err := stargateClient.ExecuteQuery(selectQuery)
@@ -121,19 +67,6 @@ conn2, err2 := grpc.Dial(astra_uri, grpc.WithTransportCredentials(credentials.Ne
 	fmt.Printf("select executed\n")
 
 	result := response.GetResultSet()
+	fmt.Printf("result: %v \n", result)
 
-	var i, j int
-	for i = 0; i < 2; i++ {
-		valueToPrint := ""
-		for j = 0; j < 2; j++ {
-			value, err := client.ToString(result.Rows[i].Values[j])
-			if err != nil {
-				fmt.Printf("error getting value %v", err)
-				os.Exit(1)
-			}
-			valueToPrint += " "
-			valueToPrint += value
-		}
-		fmt.Printf("%v \n", valueToPrint)
-	}
 }

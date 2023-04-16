@@ -1,4 +1,4 @@
-module go-astra-db
+module go-astra
 
 go 1.20
 
