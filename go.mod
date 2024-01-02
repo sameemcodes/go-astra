@@ -4,11 +4,11 @@ go 1.20
 
 require (
 	github.com/stargate/stargate-grpc-go-client v0.0.0-20220822130422-9a1c6261d4fa
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.56.3
 )
 
 require (
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	golang.org/x/net v0.17.0 // indirect
